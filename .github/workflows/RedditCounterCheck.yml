@@ -1,0 +1,38 @@
+name: Sonar Code Review Workflow
+
+on:
+  push:
+    branches: ["integration", "master"]
+  pull_request:
+    branches: ["integration", "master"]
+  workflow_dispatch:  # Permite ejecutar el flujo de trabajo manualmente
+
+jobs:
+  code-analysis-sonarCube:
+    name: Build and Analyze
+    runs-on: ubuntu-latest  # Puedes cambiar esto a self-hosted si es necesario
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'  # Cambia esto a la versión de Python que necesites
+
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
