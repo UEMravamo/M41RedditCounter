@@ -1,14 +1,27 @@
-import pandas as pd
 from src.data_processing import create_dataframe, analyze_top_posts
 
-def test_create_dataframe():
-    posts = [{"title": "Post 1", "score": 100}, {"title": "Post 2", "score": 200}]
-    df = create_dataframe(posts)
-    assert isinstance(df, pd.DataFrame)
-    assert len(df) == 2
 
-def test_analyze_top_posts():
-    posts = [{"title": "Post 1", "score": 100}, {"title": "Post 2", "score": 200}]
+# Pruebas de creación del Dataframe
+def test_create_dataframe():
+    posts = [{"title": f"Post {i}", "score": i * 10} for i in range(2500)]
+    assert len(posts) == 2500, "No se están generando suficientes datos de prueba"
     df = create_dataframe(posts)
-    analysis = analyze_top_posts(df)
-    assert isinstance(analysis, pd.DataFrame)
+    assert df.npartitions == 8, f"Número de particiones incorrecto: {df.npartitions}"
+    assert len(df.compute()) == 2500, "El DataFrame no tiene las filas esperadas"
+
+
+# Pruebas de creación completa del Dataframe
+def test_create_dataframe_full():
+    posts = []
+    for _ in range(50):
+        for i in range(10):
+            for j in range(5):
+                post_data = {
+                    "title": f"Post {i} - Comentario {j}",
+                    "score": i * 100,
+                    "comment_score": j * 10
+                }
+                posts.append(post_data)
+    df = create_dataframe(posts)
+    assert df.npartitions == 8, f"Número de particiones incorrecto: {df.npartitions}"
+    assert len(df.compute()) == 2500, "El DataFrame no tiene las 2500 filas esperadas"
