@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: reddit_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: reddit_db
+    ports:
+      - "5432:5432"
+    networks:
+      - reddit-network
+
+networks:
+  reddit-network:
+    driver: bridge

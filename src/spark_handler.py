@@ -1,28 +1,23 @@
-from multiprocessing import Pool
+from pyspark import SparkConf, SparkContext
 
 
-# Mapper que recibe los datos de un subreddit y calcula la puntuación total de publicaciones y comentarios
-def mapper(subreddit_data):
-    subreddit, posts = subreddit_data
-    post_scores = sum(post["score"] for post in posts)
-    comment_scores = sum(post["comment_score"] for post in posts)
-    return subreddit, {"post_score": post_scores, "comment_score": comment_scores,
-                       "total_score": post_scores + comment_scores}
+# Análisis de datos con Spark
+def spark_analyze(data):
+    conf = SparkConf().setAppName("RedditAnalyzer").setMaster("local[*]")
+    sc = SparkContext.getOrCreate(conf)
 
+    # Crear RDD y aplicar las transformaciones
+    rdd = sc.parallelize(data.items())
+    mapped_rdd = rdd.flatMap(lambda x: [(x[0], (post["score"], post["comment_score"])) for post in x[1]])
+    reduced_rdd = mapped_rdd.reduceByKey(lambda a, b: (a[0] + b[0], a[1] + b[1]))
 
-# Reducer que combina los resultados parciales
-def reducer(mapped_data):
-    combined = {}
-    for subreddit, scores in mapped_data:
-        combined[subreddit] = scores
-    return combined
+    results = reduced_rdd.collect()
+    sc.stop()
 
-
-# Realiza el análisis MapReduce completo
-def mapreduce_analyze(data):
-    # Crear chunks de subreddits para procesar en paralelo
-    with Pool() as pool:
-        mapped_data = pool.map(mapper, data.items())
-    # Reducir los resultados
-    final_results = reducer(mapped_data)
-    return final_results
+    return {
+        subreddit: {
+            "post_score": scores[0],
+            "comment_score": scores[1],
+            "total_score": scores[0] + scores[1]
+        } for subreddit, scores in results
+    }
